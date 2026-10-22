@@ -1,14 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation, Navigate, Outlet } from 'react-router-dom';
 
-// Layout & Global Components
+// Admin Authentication & Context
+import { AdminAuthProvider } from './context/AdminAuthContext';
+import ProtectedRoute from './components/admin/ProtectedRoute';
+
+// Public Layout & Global Components
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import VolunteerModal from './components/VolunteerModal';
 import DonationModal from './components/DonationModal';
 import Toast from './components/Toast';
 
-// Pages
+// Public Pages
 import Home from './pages/Home';
 import About from './pages/About';
 import Services from './pages/Services';
@@ -17,6 +21,18 @@ import CampaignDetail from './pages/CampaignDetail';
 import Gallery from './pages/Gallery';
 import Contact from './pages/Contact';
 import NotFound from './pages/NotFound';
+
+// Admin Pages & Layout
+import AdminLayout from './components/admin/AdminLayout';
+import AdminLogin from './pages/admin/AdminLogin';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminVolunteers from './pages/admin/AdminVolunteers';
+import AdminDonations from './pages/admin/AdminDonations';
+import AdminMessages from './pages/admin/AdminMessages';
+import AdminCampaigns from './pages/admin/AdminCampaigns';
+import AdminGallery from './pages/admin/AdminGallery';
+import AdminServices from './pages/admin/AdminServices';
+import AdminSettings from './pages/admin/AdminSettings';
 
 // ScrollToTop on route transition
 function ScrollToTop() {
@@ -33,8 +49,61 @@ function ScrollToTop() {
   return null;
 }
 
+// Wrapper Layout for all Public Website Pages
+function PublicLayout({
+  onOpenVolunteer,
+  onOpenDonation,
+  isVolunteerOpen,
+  onCloseVolunteer,
+  isDonationOpen,
+  onCloseDonation,
+  preselectedCampaign,
+  toast,
+  onCloseToast
+}) {
+  return (
+    <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900 font-sans selection:bg-brand-500 selection:text-white">
+      {/* Global Navigation */}
+      <Navbar
+        onOpenVolunteerModal={onOpenVolunteer}
+        onOpenDonationModal={() => onOpenDonation(null)}
+      />
+
+      {/* Main Content Pages */}
+      <main className="flex-grow">
+        <Outlet />
+      </main>
+
+      {/* Global Footer */}
+      <Footer
+        onOpenVolunteerModal={onOpenVolunteer}
+        onOpenDonationModal={() => onOpenDonation(null)}
+      />
+
+      {/* Global Modals */}
+      <VolunteerModal
+        isOpen={isVolunteerOpen}
+        onClose={onCloseVolunteer}
+      />
+
+      <DonationModal
+        isOpen={isDonationOpen}
+        onClose={onCloseDonation}
+        preselectedCampaign={preselectedCampaign}
+      />
+
+      {/* Global Floating Toast */}
+      <Toast
+        message={toast.message}
+        type={toast.type}
+        onClose={onCloseToast}
+      />
+    </div>
+  );
+}
+
 export default function App() {
-  // Modal states
+  // Modal states for public site
   const [isVolunteerOpen, setIsVolunteerOpen] = useState(false);
   const [isDonationOpen, setIsDonationOpen] = useState(false);
   const [preselectedCampaign, setPreselectedCampaign] = useState(null);
@@ -45,41 +114,66 @@ export default function App() {
     type: 'success'
   });
 
-  const showToast = (message, type = 'success') => {
-    setToast({ message, type });
-  };
-
-  const handleOpenVolunteer = () => {
-    setIsVolunteerOpen(true);
-  };
-
-  const handleCloseVolunteer = () => {
-    setIsVolunteerOpen(false);
-  };
+  const handleOpenVolunteer = () => setIsVolunteerOpen(true);
+  const handleCloseVolunteer = () => setIsVolunteerOpen(false);
 
   const handleOpenDonation = (campaign = null) => {
     setPreselectedCampaign(campaign);
     setIsDonationOpen(true);
   };
-
   const handleCloseDonation = () => {
     setIsDonationOpen(false);
     setPreselectedCampaign(null);
   };
 
   return (
-    <Router>
-      <ScrollToTop />
-      <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900 font-sans selection:bg-brand-500 selection:text-white">
-        {/* Global Navigation */}
-        <Navbar
-          onOpenVolunteerModal={handleOpenVolunteer}
-          onOpenDonationModal={() => handleOpenDonation(null)}
-        />
+    <AdminAuthProvider>
+      <Router>
+        <ScrollToTop />
+        <Routes>
+          {/* ======================================================= */}
+          {/* ADMIN PORTAL ROUTES */}
+          {/* ======================================================= */}
+          <Route path="/admin/login" element={<AdminLogin />} />
 
-        {/* Main Content Pages */}
-        <main className="flex-grow">
-          <Routes>
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute>
+                <AdminLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Navigate to="/admin/dashboard" replace />} />
+            <Route path="dashboard" element={<AdminDashboard />} />
+            <Route path="volunteers" element={<AdminVolunteers />} />
+            <Route path="donations" element={<AdminDonations />} />
+            <Route path="messages" element={<AdminMessages />} />
+            <Route path="campaigns" element={<AdminCampaigns />} />
+            <Route path="gallery" element={<AdminGallery />} />
+            <Route path="services" element={<AdminServices />} />
+            <Route path="settings" element={<AdminSettings />} />
+            <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
+          </Route>
+
+          {/* ======================================================= */}
+          {/* PUBLIC WEBSITE ROUTES */}
+          {/* ======================================================= */}
+          <Route
+            element={
+              <PublicLayout
+                onOpenVolunteer={handleOpenVolunteer}
+                onOpenDonation={handleOpenDonation}
+                isVolunteerOpen={isVolunteerOpen}
+                onCloseVolunteer={handleCloseVolunteer}
+                isDonationOpen={isDonationOpen}
+                onCloseDonation={handleCloseDonation}
+                preselectedCampaign={preselectedCampaign}
+                toast={toast}
+                onCloseToast={() => setToast({ message: '', type: 'success' })}
+              />
+            }
+          >
             <Route
               path="/"
               element={
@@ -124,10 +218,7 @@ export default function App() {
                 />
               }
             />
-            <Route
-              path="/gallery"
-              element={<Gallery />}
-            />
+            <Route path="/gallery" element={<Gallery />} />
             <Route
               path="/contact"
               element={
@@ -137,38 +228,10 @@ export default function App() {
                 />
               }
             />
-            <Route
-              path="*"
-              element={<NotFound />}
-            />
-          </Routes>
-        </main>
-
-        {/* Global Footer */}
-        <Footer
-          onOpenVolunteerModal={handleOpenVolunteer}
-          onOpenDonationModal={() => handleOpenDonation(null)}
-        />
-
-        {/* Global Modals */}
-        <VolunteerModal
-          isOpen={isVolunteerOpen}
-          onClose={handleCloseVolunteer}
-        />
-
-        <DonationModal
-          isOpen={isDonationOpen}
-          onClose={handleCloseDonation}
-          preselectedCampaign={preselectedCampaign}
-        />
-
-        {/* Global Floating Toast */}
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast({ message: '', type: 'success' })}
-        />
-      </div>
-    </Router>
+            <Route path="*" element={<NotFound />} />
+          </Route>
+        </Routes>
+      </Router>
+    </AdminAuthProvider>
   );
 }

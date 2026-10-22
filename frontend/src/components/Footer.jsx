@@ -186,9 +186,19 @@ export default function Footer({ onOpenVolunteerModal, onOpenDonationModal }) {
         {/* Bottom copyright & attribution */}
         <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
           <p>© {new Date().getFullYear()} Yuva Social Foundation. All rights reserved.</p>
-          <p className="flex items-center gap-1 text-slate-400">
-            Dedicated to the service of humanity <Heart className="w-3.5 h-3.5 text-red-500 fill-red-500 inline" /> Chandrapur, Maharashtra
-          </p>
+          <div className="flex flex-wrap items-center gap-4">
+            <p className="flex items-center gap-1 text-slate-400">
+              Dedicated to the service of humanity <Heart className="w-3.5 h-3.5 text-red-500 fill-red-500 inline" /> Chandrapur, Maharashtra
+            </p>
+            <span className="text-slate-700 hidden sm:inline">&bull;</span>
+            <Link
+              to="/admin/login"
+              className="flex items-center gap-1.5 text-slate-500 hover:text-brand-400 transition-colors font-semibold"
+              title="Staff & Volunteer Coordinator Portal"
+            >
+              <ShieldCheck className="w-3.5 h-3.5" /> Staff Portal
+            </Link>
+          </div>
         </div>
       </div>
     </footer>

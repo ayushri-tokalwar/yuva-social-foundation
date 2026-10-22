@@ -15,6 +15,10 @@ const apiClient = axios.create({
 export const resolveImageUrl = (imgName) => {
   if (!imgName) return '/images/YSFLogo.jpg';
   if (imgName.startsWith('http://') || imgName.startsWith('https://')) return imgName;
+  if (imgName.startsWith('/media/')) {
+    const backendBase = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api').replace('/api', '');
+    return `${backendBase}${imgName}`;
+  }
   if (imgName.startsWith('/')) return imgName;
   return `/images/${imgName}`;
 };

@@ -3,7 +3,9 @@ from django.db import models
 class Volunteer(models.Model):
     STATUS_CHOICES = (
         ('pending', 'Pending Review'),
+        ('under_review', 'Under Review'),
         ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
         ('active', 'Active Volunteer'),
         ('contacted', 'Contacted'),
         ('archived', 'Archived'),

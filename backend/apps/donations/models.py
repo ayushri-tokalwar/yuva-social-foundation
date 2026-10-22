@@ -22,9 +22,12 @@ class DonationRequest(models.Model):
 
     STATUS_CHOICES = (
         ('pending', 'Pending Verification'),
+        ('under_review', 'Under Review'),
         ('contacted', 'Contacted / Details Sent'),
         ('received', 'Contribution Confirmed'),
         ('receipt_issued', 'Receipt Issued'),
+        ('completed', 'Completed'),
+        ('closed', 'Closed'),
         ('cancelled', 'Cancelled'),
     )
 

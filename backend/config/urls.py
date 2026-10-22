@@ -26,6 +26,7 @@ def api_root(request):
             "volunteers": "/api/volunteers/",
             "donations": "/api/donations/",
             "contact": "/api/contact/",
+            "admin": "/api/admin/",
             "health": "/api/health/",
         }
     })
@@ -44,6 +45,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', api_root, name='api-root'),
     path('api/health/', health_check, name='api-health'),
+    path('api/admin/', include('apps.core.admin_urls')),
     path('api/foundation/', include('apps.foundation.urls')),
     path('api/campaigns/', include('apps.campaigns.urls')),
     path('api/services/', include('apps.services.urls')),

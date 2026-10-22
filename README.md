@@ -88,6 +88,22 @@ graph TD
 | `/api/volunteers/` | `POST` | Volunteer Enrollment Registration |
 | `/api/donations/` | `POST` | Donation Pledge with Unique Reference Code |
 | `/api/contact/` | `POST` | General & Emergency Inquiries |
+| `/api/admin/auth/login/` | `POST` | Staff Admin Token Login |
+| `/api/admin/auth/logout/` | `POST` | Invalidate Staff Session Token |
+| `/api/admin/auth/me/` | `GET` | Current Admin Profile & Permissions |
+| `/api/admin/dashboard/stats/` | `GET` | Aggregated NGO Metrics & Combined Activity Feed |
+| `/api/admin/volunteers/` | `GET, PATCH, DELETE` | Volunteer Submissions, Status Updates & Filtering |
+| `/api/admin/volunteers/export/` | `GET` | Export Volunteers to CSV |
+| `/api/admin/donations/` | `GET, PATCH, DELETE` | Contribution Requests, Notes & Status |
+| `/api/admin/donations/export/` | `GET` | Export Donations to CSV |
+| `/api/admin/messages/` | `GET, PATCH, DELETE` | Inquiries Inbox, Mark Read/Resolved |
+| `/api/admin/campaigns/` | `GET, POST, PATCH, DELETE`| Complete Campaign Management |
+| `/api/admin/gallery/` | `GET, POST, PATCH, DELETE`| Photo Gallery Archive with Safe Deletion |
+| `/api/admin/upload-image/` | `POST` | MIME + Pillow Validated Secure Image Upload |
+| `/api/admin/services/` | `GET, POST, PATCH, DELETE`| Services & Welfare Initiatives CRUD |
+| `/api/admin/foundation/profile/` | `GET, PUT` | Edit Mission, Vision, Address, Emergency Hotlines |
+| `/api/admin/foundation/team/` | `GET, POST, PATCH, DELETE`| Leadership & Staff Roster CRUD |
+| `/api/admin/foundation/metrics/` | `GET, POST, PATCH, DELETE`| Impact Statistics Counters CRUD |
 
 ---
 
@@ -137,8 +153,9 @@ python manage.py runserver 8000
 
 > **Default Superuser Credentials**:  
 > Username: `admin`  
-> Password: `admin`  
-> Admin Panel: `http://localhost:8000/admin/`
+> Password: `admin123` (or configured via `python manage.py create_admin --password <pw>`)  
+> - **React Admin Dashboard**: `http://localhost:5173/admin/login` $\rightarrow$ `http://localhost:5173/admin/dashboard`  
+> - **Django Built-in Admin**: `http://localhost:8000/admin/`  
 
 ---
 

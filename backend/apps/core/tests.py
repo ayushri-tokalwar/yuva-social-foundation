@@ -138,3 +138,184 @@ class YuvaSocialFoundationAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(response.data['success'])
         self.assertEqual(ContactMessage.objects.filter(email="amit.patil@example.com").count(), 1)
+
+
+class YuvaSocialFoundationAdminAPITests(APITestCase):
+
+    def setUp(self):
+        from django.contrib.auth.models import User
+        self.admin_user = User.objects.create_superuser(
+            username='testadmin',
+            email='testadmin@yuvasocial.org',
+            password='Password123!'
+        )
+        self.regular_user = User.objects.create_user(
+            username='regularuser',
+            email='regular@yuvasocial.org',
+            password='Password123!'
+        )
+
+        self.category = CampaignCategory.objects.create(
+            name="Healthcare & Emergency",
+            slug="healthcare-emergency"
+        )
+        self.campaign = Campaign.objects.create(
+            title="Emergency Ambulance Support",
+            slug="emergency-ambulance-support",
+            category=self.category,
+            description="24/7 ambulance support",
+            featured_image="aambulance.jpeg",
+            status="active"
+        )
+        self.volunteer = Volunteer.objects.create(
+            first_name="Sunil",
+            last_name="Gaikwad",
+            email="sunil@example.com",
+            phone="9822000000",
+            city="Chandrapur",
+            state="Maharashtra",
+            status="pending"
+        )
+        self.donation = DonationRequest.objects.create(
+            full_name="Rajesh Verma",
+            email="rajesh@example.com",
+            phone="9823000000",
+            support_type="monetary",
+            intended_amount=5000.00,
+            status="pending"
+        )
+        self.message = ContactMessage.objects.create(
+            name="Nilesh Bobade",
+            email="nilesh@example.com",
+            phone="9824000000",
+            subject="general",
+            message="Interested in monthly volunteering camp schedule.",
+            status="unread"
+        )
+
+    def test_admin_login_success(self):
+        response = self.client.post('/api/admin/auth/login/', {
+            'username': 'testadmin',
+            'password': 'Password123!'
+        })
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('token', response.data)
+        self.assertEqual(response.data['user']['username'], 'testadmin')
+
+    def test_admin_login_invalid_password(self):
+        response = self.client.post('/api/admin/auth/login/', {
+            'username': 'testadmin',
+            'password': 'WrongPassword'
+        })
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_admin_login_regular_user_denied(self):
+        response = self.client.post('/api/admin/auth/login/', {
+            'username': 'regularuser',
+            'password': 'Password123!'
+        })
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_admin_unauthorized_dashboard_access(self):
+        response = self.client.get('/api/admin/dashboard/stats/')
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_admin_dashboard_stats(self):
+        login_res = self.client.post('/api/admin/auth/login/', {
+            'username': 'testadmin',
+            'password': 'Password123!'
+        })
+        token = login_res.data['token']
+        self.client.credentials(HTTP_AUTHORIZATION=f'Token {token}')
+
+        response = self.client.get('/api/admin/dashboard/stats/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('metrics', response.data)
+        self.assertEqual(response.data['metrics']['total_campaigns'], 1)
+        self.assertEqual(response.data['metrics']['total_volunteers'], 1)
+
+    def test_admin_volunteer_status_update(self):
+        login_res = self.client.post('/api/admin/auth/login/', {
+            'username': 'testadmin',
+            'password': 'Password123!'
+        })
+        token = login_res.data['token']
+        self.client.credentials(HTTP_AUTHORIZATION=f'Token {token}')
+
+        patch_res = self.client.patch(f'/api/admin/volunteers/{self.volunteer.id}/', {
+            'status': 'approved',
+            'internal_notes': 'Verified phone and residential address.'
+        })
+        self.assertEqual(patch_res.status_code, status.HTTP_200_OK)
+        self.volunteer.refresh_from_db()
+        self.assertEqual(self.volunteer.status, 'approved')
+        self.assertEqual(self.volunteer.internal_notes, 'Verified phone and residential address.')
+
+    def test_admin_volunteers_csv_export(self):
+        login_res = self.client.post('/api/admin/auth/login/', {
+            'username': 'testadmin',
+            'password': 'Password123!'
+        })
+        token = login_res.data['token']
+        self.client.credentials(HTTP_AUTHORIZATION=f'Token {token}')
+
+        csv_res = self.client.get('/api/admin/volunteers/export/')
+        self.assertEqual(csv_res.status_code, status.HTTP_200_OK)
+        self.assertEqual(csv_res['Content-Type'], 'text/csv')
+
+    def test_admin_donation_status_update(self):
+        login_res = self.client.post('/api/admin/auth/login/', {
+            'username': 'testadmin',
+            'password': 'Password123!'
+        })
+        token = login_res.data['token']
+        self.client.credentials(HTTP_AUTHORIZATION=f'Token {token}')
+
+        patch_res = self.client.patch(f'/api/admin/donations/{self.donation.id}/', {
+            'status': 'received',
+            'notes': 'Bank transfer confirmed.'
+        })
+        self.assertEqual(patch_res.status_code, status.HTTP_200_OK)
+        self.donation.refresh_from_db()
+        self.assertEqual(self.donation.status, 'received')
+
+    def test_admin_contact_message_read_update(self):
+        login_res = self.client.post('/api/admin/auth/login/', {
+            'username': 'testadmin',
+            'password': 'Password123!'
+        })
+        token = login_res.data['token']
+        self.client.credentials(HTTP_AUTHORIZATION=f'Token {token}')
+
+        patch_res = self.client.patch(f'/api/admin/messages/{self.message.id}/', {
+            'status': 'read'
+        })
+        self.assertEqual(patch_res.status_code, status.HTTP_200_OK)
+        self.message.refresh_from_db()
+        self.assertEqual(self.message.status, 'read')
+
+    def test_admin_campaign_crud(self):
+        login_res = self.client.post('/api/admin/auth/login/', {
+            'username': 'testadmin',
+            'password': 'Password123!'
+        })
+        token = login_res.data['token']
+        self.client.credentials(HTTP_AUTHORIZATION=f'Token {token}')
+
+        create_res = self.client.post('/api/admin/campaigns/', {
+            'title': 'Tree Plantation Drive 2026',
+            'description': 'Planting 1000 saplings in Tadoba buffer zone.',
+            'category': self.category.id,
+            'featured_image': 'YSF20.jpeg',
+            'status': 'active'
+        })
+        self.assertEqual(create_res.status_code, status.HTTP_201_CREATED)
+        camp_id = create_res.data['id']
+
+        # Edit campaign
+        edit_res = self.client.patch(f'/api/admin/campaigns/{camp_id}/', {
+            'target_beneficiaries': 'Entire Chandrapur community'
+        })
+        self.assertEqual(edit_res.status_code, status.HTTP_200_OK)
+        self.assertEqual(edit_res.data['target_beneficiaries'], 'Entire Chandrapur community')
+
