@@ -1,0 +1,12 @@
+{
+  "name": "ysf-project",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Yuva Social Foundation Full-Stack Application",
+  "scripts": {
+    "dev": "npm run dev --prefix frontend",
+    "build": "npm run build --prefix frontend",
+    "preview": "npm run preview --prefix frontend",
+    "lint": "npm run lint --prefix frontend"
+  }
+}

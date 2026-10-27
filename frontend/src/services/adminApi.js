@@ -305,3 +305,5 @@ export const adminFoundationApi = {
     return res.data;
   },
 };
+
+export const adminSettingsApi = adminFoundationApi;

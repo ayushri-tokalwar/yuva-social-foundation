@@ -18,6 +18,7 @@ def api_root(request):
         "version": "1.0.0",
         "description": "RESTful API services for Yuva Social Foundation full-stack platform",
         "status": "online",
+        "frontend_url": "http://localhost:5173",
         "endpoints": {
             "foundation": "/api/foundation/",
             "campaigns": "/api/campaigns/",
@@ -42,6 +43,7 @@ def health_check(request):
     })
 
 urlpatterns = [
+    path('', api_root, name='index'),
     path('admin/', admin.site.urls),
     path('api/', api_root, name='api-root'),
     path('api/health/', health_check, name='api-health'),

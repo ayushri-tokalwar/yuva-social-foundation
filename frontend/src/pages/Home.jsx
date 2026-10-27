@@ -73,6 +73,15 @@ export default function Home({ onOpenVolunteerModal, onOpenDonationModal, setSel
   return (
     <div className="space-y-20 sm:space-y-28 pb-20">
       
+      {/* Dynamic Announcement Banner */}
+      {overview?.profile?.announcement_active && overview?.profile?.announcement_banner && (
+        <div className="bg-gradient-to-r from-red-600 via-brand-600 to-amber-600 text-white text-xs sm:text-sm font-bold py-2.5 px-4 text-center shadow-lg flex items-center justify-center gap-2">
+          <Sparkles className="w-4 h-4 flex-shrink-0 animate-pulse text-amber-200" />
+          <span>{overview.profile.announcement_banner}</span>
+          <span className="hidden md:inline text-white/80">&bull; Chandrapur, Maharashtra</span>
+        </div>
+      )}
+
       {/* =========================================================
           HERO SECTION (High-impact visual storytelling)
           ========================================================= */}
@@ -103,15 +112,27 @@ export default function Home({ onOpenVolunteerModal, onOpenDonationModal, setSel
 
           {/* Main Title */}
           <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight text-white leading-[1.1] mb-6">
-            Welcome to <br className="hidden sm:inline" />
-            <span className="bg-gradient-to-r from-brand-400 via-orange-400 to-amber-300 bg-clip-text text-transparent">
-              Yuva Social Foundation
-            </span>
+            {overview?.profile?.hero_title ? (
+              <span className="bg-gradient-to-r from-brand-300 via-orange-300 to-amber-200 bg-clip-text text-transparent">
+                {overview.profile.hero_title}
+              </span>
+            ) : (
+              <>
+                Welcome to <br className="hidden sm:inline" />
+                <span className="bg-gradient-to-r from-brand-400 via-orange-400 to-amber-300 bg-clip-text text-transparent">
+                  Yuva Social Foundation
+                </span>
+              </>
+            )}
           </h1>
 
           {/* Mission Subtitle */}
           <p className="max-w-3xl mx-auto text-base sm:text-xl text-slate-300 leading-relaxed mb-10 font-normal">
-            Standing by underprivileged communities since 2017. Providing <strong className="text-white">24/7 emergency ambulance support</strong>, <strong className="text-white">daily food donation</strong>, <strong className="text-white">blood donation camps</strong>, and <strong className="text-white">child education assistance</strong>.
+            {overview?.profile?.hero_subtitle || (
+              <>
+                Standing by underprivileged communities since 2017. Providing <strong className="text-white">24/7 emergency ambulance support</strong>, <strong className="text-white">daily food donation</strong>, <strong className="text-white">blood donation camps</strong>, and <strong className="text-white">child education assistance</strong>.
+              </>
+            )}
           </p>
 
           {/* CTA Buttons */}
@@ -211,7 +232,11 @@ export default function Home({ onOpenVolunteerModal, onOpenDonationModal, setSel
               </h2>
 
               <p className="text-slate-300 text-sm sm:text-base leading-relaxed">
-                Yuva Social Foundation operates a dedicated ambulance in active coordination with the <strong className="text-white">Government Hospital in Chandrapur</strong>. We ensure road accident victims and critical patients in impoverished areas receive immediate transportation and first aid to the nearest medical center without financial delay.
+                {overview?.profile?.ambulance_emergency_text || (
+                  <>
+                    Yuva Social Foundation operates a dedicated ambulance in active coordination with the <strong className="text-white">Government Hospital in Chandrapur</strong>. We ensure road accident victims and critical patients in impoverished areas receive immediate transportation and first aid to the nearest medical center without financial delay.
+                  </>
+                )}
               </p>
 
               <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 space-y-3">
@@ -221,8 +246,11 @@ export default function Home({ onOpenVolunteerModal, onOpenDonationModal, setSel
                   </div>
                   <div>
                     <span className="text-xs text-slate-400 font-medium block">24/7 Ambulance Emergency Dispatch</span>
-                    <a href="tel:+918669264943" className="text-lg sm:text-xl font-black text-white hover:text-red-400 transition-colors">
-                      +91 8669264943
+                    <a 
+                      href={`tel:${overview?.profile?.ambulance_contact || "+918669264943"}`} 
+                      className="text-lg sm:text-xl font-black text-white hover:text-red-400 transition-colors"
+                    >
+                      {overview?.profile?.ambulance_contact || "+91 8669264943"}
                     </a>
                   </div>
                 </div>

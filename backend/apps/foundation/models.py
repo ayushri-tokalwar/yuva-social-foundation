@@ -28,6 +28,34 @@ class FoundationProfile(models.Model):
     youtube_url = models.URLField(blank=True)
     linkedin_url = models.URLField(blank=True)
 
+    # Dynamic Website Content & Announcements
+    hero_title = models.CharField(
+        max_length=250,
+        default="Welcome to Yuva Social Foundation",
+        blank=True,
+        help_text="Primary hero heading on homepage"
+    )
+    hero_subtitle = models.TextField(
+        default="Standing by underprivileged communities since 2017. Providing 24/7 emergency ambulance support, daily food donation, blood donation camps, and child education assistance.",
+        blank=True,
+        help_text="Hero narrative on homepage"
+    )
+    announcement_banner = models.CharField(
+        max_length=350,
+        default="24/7 Emergency Ambulance Helpline Active Across Chandrapur District",
+        blank=True,
+        help_text="Global top announcement or urgent notification"
+    )
+    announcement_active = models.BooleanField(
+        default=True,
+        help_text="Whether the announcement banner is visible on the public website"
+    )
+    ambulance_emergency_text = models.TextField(
+        default="Yuva Social Foundation operates a dedicated ambulance in active coordination with the Government Hospital in Chandrapur. We ensure road accident victims and critical patients in impoverished areas receive immediate transportation and first aid to the nearest medical center without financial delay.",
+        blank=True,
+        help_text="Ambulance section narrative"
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

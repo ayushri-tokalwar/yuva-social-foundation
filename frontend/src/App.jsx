@@ -33,6 +33,8 @@ import AdminCampaigns from './pages/admin/AdminCampaigns';
 import AdminGallery from './pages/admin/AdminGallery';
 import AdminServices from './pages/admin/AdminServices';
 import AdminSettings from './pages/admin/AdminSettings';
+import AdminJoinRequests from './pages/admin/AdminJoinRequests';
+import AdminContent from './pages/admin/AdminContent';
 
 // ScrollToTop on route transition
 function ScrollToTop() {
@@ -147,11 +149,13 @@ export default function App() {
             <Route index element={<Navigate to="/admin/dashboard" replace />} />
             <Route path="dashboard" element={<AdminDashboard />} />
             <Route path="volunteers" element={<AdminVolunteers />} />
+            <Route path="join-requests" element={<AdminJoinRequests />} />
             <Route path="donations" element={<AdminDonations />} />
             <Route path="messages" element={<AdminMessages />} />
             <Route path="campaigns" element={<AdminCampaigns />} />
             <Route path="gallery" element={<AdminGallery />} />
             <Route path="services" element={<AdminServices />} />
+            <Route path="content" element={<AdminContent />} />
             <Route path="settings" element={<AdminSettings />} />
             <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
           </Route>

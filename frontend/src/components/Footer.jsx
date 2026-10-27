@@ -193,10 +193,10 @@ export default function Footer({ onOpenVolunteerModal, onOpenDonationModal }) {
             <span className="text-slate-700 hidden sm:inline">&bull;</span>
             <Link
               to="/admin/login"
-              className="flex items-center gap-1.5 text-slate-500 hover:text-brand-400 transition-colors font-semibold"
-              title="Staff & Volunteer Coordinator Portal"
+              className="flex items-center gap-1.5 text-slate-400 hover:text-brand-400 transition-colors font-bold"
+              title="Foundation Administrator Portal"
             >
-              <ShieldCheck className="w-3.5 h-3.5" /> Staff Portal
+              <ShieldCheck className="w-3.5 h-3.5 text-brand-400" /> Admin Portal
             </Link>
           </div>
         </div>

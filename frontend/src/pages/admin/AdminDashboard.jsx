@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { adminDashboardApi } from '../../services/adminApi';
+import { adminDashboardApi, adminVolunteersApi, adminDonationsApi } from '../../services/adminApi';
 import {
   Megaphone,
   Users,
@@ -17,7 +17,12 @@ import {
   AlertCircle,
   Database,
   Calendar,
-  Sparkles
+  Sparkles,
+  Download,
+  BarChart3,
+  TrendingUp,
+  UserPlus,
+  FileText
 } from 'lucide-react';
 import StatusBadge from '../../components/admin/StatusBadge';
 
@@ -27,6 +32,7 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [lastRefreshed, setLastRefreshed] = useState(new Date());
+  const [dateFilter, setDateFilter] = useState('all'); // all, 30days, 7days
 
   const fetchStats = async () => {
     setLoading(true);
@@ -60,7 +66,34 @@ export default function AdminDashboard() {
     total_services: 0,
   };
 
-  const recentActivity = stats?.recent_activity || [];
+  const rawActivity = stats?.recent_activity || [];
+
+  // Filter activities by selected date range
+  const recentActivity = rawActivity.filter(act => {
+    if (dateFilter === 'all') return true;
+    const itemDate = new Date(act.created_at);
+    const now = new Date();
+    const diffDays = (now - itemDate) / (1000 * 60 * 60 * 24);
+    if (dateFilter === '7days') return diffDays <= 7;
+    if (dateFilter === '30days') return diffDays <= 30;
+    return true;
+  });
+
+  const handleExportVolunteers = async () => {
+    try {
+      await adminVolunteersApi.downloadCsv();
+    } catch (err) {
+      alert('Failed to export volunteers.');
+    }
+  };
+
+  const handleExportDonations = async () => {
+    try {
+      await adminDonationsApi.downloadCsv();
+    } catch (err) {
+      alert('Failed to export donations.');
+    }
+  };
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto">
@@ -75,11 +108,11 @@ export default function AdminDashboard() {
             Executive Foundation Overview
           </h1>
           <p className="text-xs sm:text-sm text-slate-400 mt-1">
-            Real-time management metrics, pending applications, and foundation activity.
+            Real-time management metrics, pending applications, and verified database activity.
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2.5">
           <button
             onClick={fetchStats}
             disabled={loading}
@@ -88,6 +121,24 @@ export default function AdminDashboard() {
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
             <span>Refresh</span>
+          </button>
+
+          <button
+            onClick={handleExportVolunteers}
+            className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-sky-300 text-xs font-bold border border-slate-700 flex items-center gap-1.5 transition-colors"
+            title="Download Volunteer CSV"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Volunteers CSV</span>
+          </button>
+
+          <button
+            onClick={handleExportDonations}
+            className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-300 text-xs font-bold border border-slate-700 flex items-center gap-1.5 transition-colors"
+            title="Download Donations CSV"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Donations CSV</span>
           </button>
 
           <Link
@@ -107,10 +158,7 @@ export default function AdminDashboard() {
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
             <span>{error}</span>
           </div>
-          <button
-            onClick={fetchStats}
-            className="underline font-bold hover:text-white"
-          >
+          <button onClick={fetchStats} className="underline font-bold hover:text-white">
             Try Again
           </button>
         </div>
@@ -152,7 +200,7 @@ export default function AdminDashboard() {
         >
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Volunteers Registered</p>
+              <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Volunteers & Join Requests</p>
               <h3 className="text-3xl font-black text-white mt-2">
                 {loading ? '...' : metrics.total_volunteers}
               </h3>
@@ -163,7 +211,7 @@ export default function AdminDashboard() {
           </div>
           <div className="mt-4 pt-4 border-t border-slate-900 flex items-center justify-between text-xs">
             <span className={`font-semibold flex items-center gap-1.5 ${
-              metrics.pending_volunteers > 0 ? 'text-amber-400' : 'text-slate-400'
+              metrics.pending_volunteers > 0 ? 'text-amber-400 font-bold' : 'text-slate-400'
             }`}>
               <span className="w-2 h-2 rounded-full bg-amber-400" />
               {metrics.pending_volunteers} pending review
@@ -192,7 +240,7 @@ export default function AdminDashboard() {
           </div>
           <div className="mt-4 pt-4 border-t border-slate-900 flex items-center justify-between text-xs">
             <span className={`font-semibold flex items-center gap-1.5 ${
-              metrics.pending_donations > 0 ? 'text-amber-400' : 'text-slate-400'
+              metrics.pending_donations > 0 ? 'text-amber-400 font-bold' : 'text-slate-400'
             }`}>
               <span className="w-2 h-2 rounded-full bg-amber-400" />
               {metrics.pending_donations} awaiting receipt/contact
@@ -285,12 +333,152 @@ export default function AdminDashboard() {
         </Link>
       </div>
 
+      {/* Database Analytics & Submission Breakdowns */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Visual Submission Activity Breakdown */}
+        <div className="lg:col-span-2 bg-slate-950/80 rounded-3xl p-6 border border-slate-800/80 space-y-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                <BarChart3 className="w-4 h-4 text-brand-400" />
+                Database Activity & Ingestion Distribution
+              </h3>
+              <p className="text-[11px] text-slate-400 mt-0.5">Real distribution of active records across portal modules</p>
+            </div>
+            <span className="text-xs font-bold text-emerald-400 flex items-center gap-1 bg-emerald-950/40 border border-emerald-800/40 px-2.5 py-1 rounded-lg">
+              <Database className="w-3.5 h-3.5" /> Connected
+            </span>
+          </div>
+
+          {/* Graphical Proportional Bars */}
+          <div className="space-y-4 pt-2">
+            <div>
+              <div className="flex justify-between text-xs font-semibold mb-1">
+                <span className="text-slate-300">Social Services Catalog</span>
+                <span className="text-white font-mono font-bold">{metrics.total_services}</span>
+              </div>
+              <div className="w-full h-2.5 bg-slate-900 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-amber-500 rounded-full transition-all duration-500"
+                  style={{ width: `${Math.min(100, Math.max(15, metrics.total_services * 6))}%` }}
+                />
+              </div>
+            </div>
+
+            <div>
+              <div className="flex justify-between text-xs font-semibold mb-1">
+                <span className="text-slate-300">Active & Published Campaigns</span>
+                <span className="text-white font-mono font-bold">{metrics.total_campaigns} ({metrics.active_campaigns} Active)</span>
+              </div>
+              <div className="w-full h-2.5 bg-slate-900 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-brand-500 rounded-full transition-all duration-500"
+                  style={{ width: `${Math.min(100, Math.max(20, metrics.total_campaigns * 14))}%` }}
+                />
+              </div>
+            </div>
+
+            <div>
+              <div className="flex justify-between text-xs font-semibold mb-1">
+                <span className="text-slate-300">High-Resolution Gallery Assets</span>
+                <span className="text-white font-mono font-bold">{metrics.total_gallery}</span>
+              </div>
+              <div className="w-full h-2.5 bg-slate-900 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-purple-500 rounded-full transition-all duration-500"
+                  style={{ width: `${Math.min(100, Math.max(10, metrics.total_gallery * 5))}%` }}
+                />
+              </div>
+            </div>
+
+            <div>
+              <div className="flex justify-between text-xs font-semibold mb-1">
+                <span className="text-slate-300">Volunteer Applications</span>
+                <span className="text-white font-mono font-bold">{metrics.total_volunteers} ({metrics.pending_volunteers} Pending)</span>
+              </div>
+              <div className="w-full h-2.5 bg-slate-900 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-sky-500 rounded-full transition-all duration-500"
+                  style={{ width: `${Math.min(100, Math.max(8, metrics.total_volunteers * 20))}%` }}
+                />
+              </div>
+            </div>
+
+            <div>
+              <div className="flex justify-between text-xs font-semibold mb-1">
+                <span className="text-slate-300">Donation & In-Kind Requests</span>
+                <span className="text-white font-mono font-bold">{metrics.total_donations} ({metrics.pending_donations} Pending)</span>
+              </div>
+              <div className="w-full h-2.5 bg-slate-900 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-emerald-500 rounded-full transition-all duration-500"
+                  style={{ width: `${Math.min(100, Math.max(5, metrics.total_donations * 25))}%` }}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* System & Verification Status Card */}
+        <div className="bg-slate-950/80 rounded-3xl p-6 border border-slate-800/80 flex flex-col justify-between">
+          <div>
+            <h3 className="text-sm font-bold text-white flex items-center gap-2 mb-1">
+              <TrendingUp className="w-4 h-4 text-emerald-400" />
+              Administrative Verification Desk
+            </h3>
+            <p className="text-[11px] text-slate-400">Immediate action items awaiting staff attention</p>
+
+            <div className="space-y-3 mt-4 text-xs">
+              <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800/80 flex items-center justify-between">
+                <div>
+                  <p className="font-bold text-slate-200">Pending Volunteers</p>
+                  <p className="text-[10px] text-slate-400">Awaiting induction call</p>
+                </div>
+                <span className="px-2.5 py-1 rounded-xl bg-amber-500/20 text-amber-300 font-mono font-bold">
+                  {metrics.pending_volunteers}
+                </span>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800/80 flex items-center justify-between">
+                <div>
+                  <p className="font-bold text-slate-200">Unread Messages</p>
+                  <p className="text-[10px] text-slate-400">Contact & ambulance inquiries</p>
+                </div>
+                <span className="px-2.5 py-1 rounded-xl bg-red-500/20 text-red-300 font-mono font-bold">
+                  {metrics.unread_messages}
+                </span>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800/80 flex items-center justify-between">
+                <div>
+                  <p className="font-bold text-slate-200">Donation Pledges</p>
+                  <p className="text-[10px] text-slate-400">Awaiting bank verification</p>
+                </div>
+                <span className="px-2.5 py-1 rounded-xl bg-emerald-500/20 text-emerald-300 font-mono font-bold">
+                  {metrics.pending_donations}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="pt-4 mt-4 border-t border-slate-800">
+            <Link
+              to="/admin/volunteers"
+              className="w-full py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs text-center flex items-center justify-center gap-1.5 transition-colors"
+            >
+              <span>Process Pending Applications</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+        </div>
+      </div>
+
       {/* Quick Actions Panel */}
       <div className="bg-slate-950/80 rounded-3xl p-6 border border-slate-800/80">
         <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-4">
           Quick Management Actions
         </h3>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           <Link
             to="/admin/campaigns?action=new"
             className="p-4 rounded-2xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-center transition-all hover:scale-[1.02] flex flex-col items-center justify-center gap-2 group"
@@ -298,7 +486,7 @@ export default function AdminDashboard() {
             <div className="w-10 h-10 rounded-xl bg-brand-500/10 text-brand-400 flex items-center justify-center group-hover:bg-brand-500 group-hover:text-white transition-colors">
               <PlusCircle className="w-5 h-5" />
             </div>
-            <span className="text-xs font-bold text-slate-200">Add Campaign</span>
+            <span className="text-xs font-bold text-slate-200">New Campaign</span>
           </Link>
 
           <Link
@@ -308,32 +496,42 @@ export default function AdminDashboard() {
             <div className="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center group-hover:bg-purple-500 group-hover:text-white transition-colors">
               <Upload className="w-5 h-5" />
             </div>
-            <span className="text-xs font-bold text-slate-200">Upload Photo</span>
+            <span className="text-xs font-bold text-slate-200">Upload Media</span>
           </Link>
 
           <Link
-            to="/admin/volunteers"
+            to="/admin/join-requests"
             className="p-4 rounded-2xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-center transition-all hover:scale-[1.02] flex flex-col items-center justify-center gap-2 group"
           >
-            <div className="w-10 h-10 rounded-xl bg-sky-500/10 text-sky-400 flex items-center justify-center group-hover:bg-sky-500 group-hover:text-white transition-colors">
-              <Users className="w-5 h-5" />
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center group-hover:bg-emerald-500 group-hover:text-white transition-colors">
+              <UserPlus className="w-5 h-5" />
             </div>
-            <span className="text-xs font-bold text-slate-200">View Volunteers</span>
+            <span className="text-xs font-bold text-slate-200">Join Requests</span>
+          </Link>
+
+          <Link
+            to="/admin/content"
+            className="p-4 rounded-2xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-center transition-all hover:scale-[1.02] flex flex-col items-center justify-center gap-2 group"
+          >
+            <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center group-hover:bg-amber-500 group-hover:text-white transition-colors">
+              <FileText className="w-5 h-5" />
+            </div>
+            <span className="text-xs font-bold text-slate-200">Edit Website</span>
           </Link>
 
           <Link
             to="/admin/donations"
             className="p-4 rounded-2xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-center transition-all hover:scale-[1.02] flex flex-col items-center justify-center gap-2 group"
           >
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center group-hover:bg-emerald-500 group-hover:text-white transition-colors">
+            <div className="w-10 h-10 rounded-xl bg-teal-500/10 text-teal-400 flex items-center justify-center group-hover:bg-teal-500 group-hover:text-white transition-colors">
               <HeartHandshake className="w-5 h-5" />
             </div>
-            <span className="text-xs font-bold text-slate-200">Donation Requests</span>
+            <span className="text-xs font-bold text-slate-200">Donations</span>
           </Link>
 
           <Link
             to="/admin/messages"
-            className="p-4 rounded-2xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-center transition-all hover:scale-[1.02] flex flex-col items-center justify-center gap-2 group col-span-2 sm:col-span-1"
+            className="p-4 rounded-2xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-center transition-all hover:scale-[1.02] flex flex-col items-center justify-center gap-2 group"
           >
             <div className="w-10 h-10 rounded-xl bg-red-500/10 text-red-400 flex items-center justify-center group-hover:bg-red-500 group-hover:text-white transition-colors">
               <Mail className="w-5 h-5" />
@@ -345,23 +543,53 @@ export default function AdminDashboard() {
 
       {/* Recent Activity Table */}
       <div className="bg-slate-950/80 rounded-3xl p-6 border border-slate-800/80">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>
             <h3 className="text-base font-bold text-white">Recent Activity & Submissions</h3>
             <p className="text-xs text-slate-400 mt-0.5">
-              Latest form submissions from the live website
+              Live submissions recorded from the Yuva Social Foundation portal
             </p>
           </div>
-          <span className="text-xs text-slate-500 flex items-center gap-1">
-            <Clock className="w-3.5 h-3.5" />
-            Updated {lastRefreshed.toLocaleTimeString()}
-          </span>
+
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5 bg-slate-900 p-1 rounded-xl border border-slate-800 text-[11px]">
+              <button
+                onClick={() => setDateFilter('all')}
+                className={`px-2.5 py-1 rounded-lg font-bold transition-colors ${
+                  dateFilter === 'all' ? 'bg-brand-600 text-white' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                All Time
+              </button>
+              <button
+                onClick={() => setDateFilter('30days')}
+                className={`px-2.5 py-1 rounded-lg font-bold transition-colors ${
+                  dateFilter === '30days' ? 'bg-brand-600 text-white' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Last 30 Days
+              </button>
+              <button
+                onClick={() => setDateFilter('7days')}
+                className={`px-2.5 py-1 rounded-lg font-bold transition-colors ${
+                  dateFilter === '7days' ? 'bg-brand-600 text-white' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Last 7 Days
+              </button>
+            </div>
+
+            <span className="text-xs text-slate-500 hidden md:flex items-center gap-1">
+              <Clock className="w-3.5 h-3.5" />
+              {lastRefreshed.toLocaleTimeString()}
+            </span>
+          </div>
         </div>
 
         {recentActivity.length === 0 ? (
           <div className="text-center py-12 border border-dashed border-slate-800 rounded-2xl">
             <CheckCircle2 className="w-10 h-10 text-slate-600 mx-auto mb-2" />
-            <p className="text-sm font-bold text-slate-300">No submissions recorded yet</p>
+            <p className="text-sm font-bold text-slate-300">No submissions recorded for this timeframe</p>
             <p className="text-xs text-slate-500 mt-1">
               New volunteer applications, donation intents, and inquiries will appear here automatically.
             </p>

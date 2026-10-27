@@ -151,24 +151,39 @@ python manage.py test apps.core.tests
 python manage.py runserver 8000
 ```
 
-> **Default Superuser Credentials**:  
-> Username: `admin`  
-> Password: `admin123` (or configured via `python manage.py create_admin --password <pw>`)  
-> - **React Admin Dashboard**: `http://localhost:5173/admin/login` $\rightarrow$ `http://localhost:5173/admin/dashboard`  
+> **Official Demo Administrator Credentials**:  
+> - **Username**: `yuvasocialfoundation`  
+> - **Password**: `admin`  
+> - **Management Command**: `python manage.py create_admin --username yuvasocialfoundation --password admin --reset`  
+> - **React Admin Portal**: `http://localhost:5173/admin/login` $\rightarrow$ `http://localhost:5173/admin/dashboard`  
 > - **Django Built-in Admin**: `http://localhost:8000/admin/`  
+
+---
+
+### Admin Management Portal Routes
+
+The admin portal provides single-dashboard control across 11 dedicated interfaces:
+
+| Frontend Route | Interface & Capabilities |
+| :--- | :--- |
+| `/admin/login` | Secure branded administrator authentication with token session management |
+| `/admin/dashboard` | Real-time statistics, monthly analytics breakdown, date filters, and recent activity logs |
+| `/admin/volunteers` | Complete volunteer applicant drawer, status review, internal notes, CSV export |
+| `/admin/join-requests`| Dedicated membership / foundation join request triage, skills matching, export |
+| `/admin/donations` | Donation inquiry / pledge management, verified status tracking, donor note logs |
+| `/admin/messages` | Full contact inbox, unread badges, subject filtering, in-line reply tracking |
+| `/admin/campaigns` | Create, edit, publish/unpublish campaigns, financial progress goals, milestone updates |
+| `/admin/services` | Foundation welfare service management, ambulance availability toggles, icons |
+| `/admin/gallery` | Batch multi-image uploader, real-time preview, featured star toggle, safe deletion |
+| `/admin/content` | Dynamic homepage hero, emergency banner toggle, about us/mission/vision without redeploy |
+| `/admin/settings` | Profile settings, office contact coordinates, leadership team roster & impact metrics |
 
 ---
 
 ### Step 2: Frontend Setup
 
 ```bash
-# 1. Navigate to frontend (in a new terminal)
-cd frontend
-
-# 2. Install dependencies (if needed)
-npm install
-
-# 3. Start Vite development server
+# In the root repository directory (or cd frontend)
 npm run dev
 ```
 

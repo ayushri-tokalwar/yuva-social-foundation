@@ -16,18 +16,22 @@ import {
   X,
   Shield,
   Eye,
-  Server
+  Server,
+  UserPlus,
+  FileText
 } from 'lucide-react';
 import ConfirmDialog from './ConfirmDialog';
 
 const NAV_ITEMS = [
   { to: '/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/admin/volunteers', icon: Users, label: 'Volunteers' },
+  { to: '/admin/join-requests', icon: UserPlus, label: 'Join Requests' },
   { to: '/admin/donations', icon: HeartHandshake, label: 'Donation Requests' },
   { to: '/admin/messages', icon: Mail, label: 'Contact Messages' },
   { to: '/admin/campaigns', icon: Megaphone, label: 'Campaigns' },
   { to: '/admin/gallery', icon: Images, label: 'Gallery & Media' },
   { to: '/admin/services', icon: HandHeart, label: 'Services' },
+  { to: '/admin/content', icon: FileText, label: 'Website Content' },
   { to: '/admin/settings', icon: Settings, label: 'Foundation Settings' },
 ];
 

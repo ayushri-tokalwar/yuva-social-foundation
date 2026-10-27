@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { adminGalleryApi } from '../../services/adminApi';
 import { resolveImageUrl } from '../../services/api';
@@ -13,7 +13,11 @@ import {
   CheckCircle,
   X,
   Loader2,
-  ZoomIn
+  ZoomIn,
+  Star,
+  Layers,
+  UploadCloud,
+  ArrowUpDown
 } from 'lucide-react';
 import AdminModal from '../../components/admin/AdminModal';
 import ConfirmDialog from '../../components/admin/ConfirmDialog';
@@ -38,13 +42,21 @@ export default function AdminGallery() {
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
 
-  // Modal states
+  // Single Edit/Create Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [formData, setFormData] = useState(EMPTY_ITEM);
   const [deleteCandidate, setDeleteCandidate] = useState(null);
   const [saving, setSaving] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
+
+  // Batch Multi-Image Upload states
+  const [isBatchOpen, setIsBatchOpen] = useState(false);
+  const [batchFiles, setBatchFiles] = useState([]);
+  const [batchCategory, setBatchCategory] = useState('');
+  const [batchLocation, setBatchLocation] = useState('Chandrapur, Maharashtra');
+  const [batchProgress, setBatchProgress] = useState({ current: 0, total: 0, active: false });
+  const batchFileInputRef = useRef(null);
 
   // Full-screen Preview modal
   const [previewImage, setPreviewImage] = useState(null);
@@ -108,6 +120,18 @@ export default function AdminGallery() {
     setIsModalOpen(true);
   };
 
+  const handleToggleFeatured = async (item) => {
+    try {
+      const newFeatured = !item.is_featured;
+      await adminGalleryApi.update(item.id, { is_featured: newFeatured });
+      setItems(prev => prev.map(i => i.id === item.id ? { ...i, is_featured: newFeatured } : i));
+      setToastMessage(`"${item.title}" ${newFeatured ? 'marked as featured' : 'unmarked from featured'}.`);
+      setTimeout(() => setToastMessage(null), 3000);
+    } catch (err) {
+      alert('Failed to toggle featured status.');
+    }
+  };
+
   const handleFormSubmit = async (e) => {
     e.preventDefault();
     if (!formData.title.trim()) {
@@ -162,6 +186,58 @@ export default function AdminGallery() {
     }
   };
 
+  // ==========================================
+  // BATCH MULTI-IMAGE UPLOAD
+  // ==========================================
+  const handleBatchFileSelect = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    setBatchFiles(files);
+  };
+
+  const handleBatchUploadStart = async () => {
+    if (batchFiles.length === 0) {
+      alert('Please select at least one image file.');
+      return;
+    }
+
+    setBatchProgress({ current: 0, total: batchFiles.length, active: true });
+    let successCount = 0;
+
+    for (let i = 0; i < batchFiles.length; i++) {
+      const file = batchFiles[i];
+      setBatchProgress({ current: i + 1, total: batchFiles.length, active: true });
+
+      try {
+        // 1. Upload image to server
+        const uploadRes = await adminGalleryApi.uploadImage(file);
+        if (uploadRes && uploadRes.url) {
+          // 2. Create GalleryItem in database
+          const title = file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
+          await adminGalleryApi.create({
+            title: title.charAt(0).toUpperCase() + title.slice(1),
+            caption: 'Yuva Social Foundation Community Welfare Drive',
+            category: batchCategory || null,
+            image: uploadRes.url,
+            location: batchLocation || 'Chandrapur, Maharashtra',
+            is_featured: false,
+            order: 0
+          });
+          successCount++;
+        }
+      } catch (err) {
+        console.warn(`Failed to upload ${file.name}:`, err);
+      }
+    }
+
+    setBatchProgress({ current: batchFiles.length, total: batchFiles.length, active: false });
+    setIsBatchOpen(false);
+    setBatchFiles([]);
+    setToastMessage(`Successfully uploaded ${successCount} photos to gallery!`);
+    setTimeout(() => setToastMessage(null), 4000);
+    fetchGallery();
+  };
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
       {/* Toast Alert */}
@@ -180,17 +256,31 @@ export default function AdminGallery() {
             Media & Gallery Management
           </h1>
           <p className="text-xs text-slate-400 mt-1">
-            Upload authentic photos, newspaper clippings, ambulance handovers, and camp pictures.
+            Upload photos, newspaper clippings, ambulance handovers, and camp pictures with full metadata control.
           </p>
         </div>
 
-        <button
-          onClick={handleOpenCreate}
-          className="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold shadow-lg shadow-purple-600/25 flex items-center gap-2 transition-all self-start sm:self-auto hover:scale-105"
-        >
-          <Upload className="w-4 h-4" />
-          <span>Upload Picture</span>
-        </button>
+        <div className="flex items-center gap-2.5 self-start sm:self-auto">
+          <button
+            onClick={() => {
+              setBatchFiles([]);
+              setBatchCategory(categories[0]?.id || '');
+              setIsBatchOpen(true);
+            }}
+            className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-purple-300 text-xs font-bold border border-purple-500/30 flex items-center gap-2 transition-all hover:scale-105"
+          >
+            <Layers className="w-4 h-4 text-purple-400" />
+            <span>Batch Multi-Upload</span>
+          </button>
+
+          <button
+            onClick={handleOpenCreate}
+            className="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold shadow-lg shadow-purple-600/25 flex items-center gap-2 transition-all hover:scale-105"
+          >
+            <Upload className="w-4 h-4" />
+            <span>Upload Picture</span>
+          </button>
+        </div>
       </div>
 
       {/* Search and Filters */}
@@ -234,7 +324,7 @@ export default function AdminGallery() {
           <Images className="w-12 h-12 text-slate-600 mx-auto mb-3" />
           <h3 className="text-sm font-bold text-slate-300">No photos in gallery</h3>
           <p className="text-xs text-slate-500 mt-1">
-            Click "Upload Picture" to upload authentic event photos to the public gallery.
+            Click "Upload Picture" or "Batch Multi-Upload" to add photos to the public gallery.
           </p>
         </div>
       ) : (
@@ -270,11 +360,20 @@ export default function AdminGallery() {
                     {item.category_name}
                   </div>
                 )}
-                {item.is_featured && (
-                  <div className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-md bg-purple-600 text-white text-[10px] font-black uppercase">
-                    Featured
-                  </div>
-                )}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleToggleFeatured(item);
+                  }}
+                  className={`absolute top-2.5 right-2.5 p-1.5 rounded-lg backdrop-blur-md transition-colors ${
+                    item.is_featured
+                      ? 'bg-amber-500 text-white shadow-md'
+                      : 'bg-black/60 text-slate-400 hover:text-white'
+                  }`}
+                  title={item.is_featured ? 'Click to unfeature' : 'Click to feature on homepage'}
+                >
+                  <Star className={`w-3.5 h-3.5 ${item.is_featured ? 'fill-white' : ''}`} />
+                </button>
               </div>
 
               <div className="p-4 flex-1 flex flex-col justify-between">
@@ -315,26 +414,25 @@ export default function AdminGallery() {
         </div>
       )}
 
-      {/* Upload / Edit Modal */}
+      {/* Upload / Edit Single Modal */}
       <AdminModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title={editingItem ? `Edit Picture: ${editingItem.title}` : 'Upload New Gallery Photo'}
-        subtitle="Photos will appear on the public website's interactive media gallery."
-        maxWidth="max-w-2xl"
+        title={editingItem ? `Edit Photo: ${editingItem.title}` : 'Upload Photo to Foundation Gallery'}
+        subtitle="Manage photo title, category, high-res image, and featured status."
       >
         <form onSubmit={handleFormSubmit} className="space-y-4 text-xs">
           <div>
             <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-300 mb-1">
-              Picture Title *
+              Photo Title *
             </label>
             <input
               type="text"
               required
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              placeholder="e.g. Free Blood Camp at Chandrapur Medical College"
-              className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              placeholder="e.g. Free Blood Donation Camp at Chandrapur Hospital"
+              className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
             />
           </div>
 
@@ -343,7 +441,7 @@ export default function AdminGallery() {
               Category
             </label>
             <select
-              value={formData.category}
+              value={formData.category || ''}
               onChange={(e) => setFormData({ ...formData, category: e.target.value })}
               className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
             >
@@ -354,7 +452,6 @@ export default function AdminGallery() {
             </select>
           </div>
 
-          {/* Image Upload Widget */}
           <ImageUploadWidget
             label="Photo File *"
             currentImage={formData.image}
@@ -433,6 +530,116 @@ export default function AdminGallery() {
             </button>
           </div>
         </form>
+      </AdminModal>
+
+      {/* Batch Multi-Upload Modal */}
+      <AdminModal
+        isOpen={isBatchOpen}
+        onClose={() => !batchProgress.active && setIsBatchOpen(false)}
+        title="Batch Multi-Image Upload"
+        subtitle="Select multiple photos to upload and register them simultaneously."
+      >
+        <div className="space-y-5 text-xs text-slate-300">
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-300 mb-1">
+              Select Photos (Multiple Selection Allowed) *
+            </label>
+            <div
+              onClick={() => batchFileInputRef.current?.click()}
+              className="border-2 border-dashed border-slate-800 hover:border-purple-500 p-8 rounded-2xl bg-slate-950/60 text-center cursor-pointer transition-colors"
+            >
+              <UploadCloud className="w-10 h-10 text-purple-400 mx-auto mb-2" />
+              <p className="font-bold text-white text-sm">
+                {batchFiles.length > 0 ? `${batchFiles.length} files selected` : 'Click to Browse Files'}
+              </p>
+              <p className="text-[11px] text-slate-400 mt-1">Supports JPG, PNG, WebP (up to 15MB each)</p>
+            </div>
+            <input
+              type="file"
+              ref={batchFileInputRef}
+              multiple
+              accept="image/jpeg,image/png,image/webp"
+              onChange={handleBatchFileSelect}
+              className="hidden"
+            />
+          </div>
+
+          {batchFiles.length > 0 && (
+            <div className="max-h-40 overflow-y-auto space-y-1 p-2 bg-slate-950 rounded-xl border border-slate-800 text-[11px]">
+              {batchFiles.map((file, idx) => (
+                <div key={idx} className="flex items-center justify-between p-1.5 hover:bg-slate-900 rounded">
+                  <span className="text-white truncate max-w-[260px]">{file.name}</span>
+                  <span className="text-slate-500">{(file.size / (1024 * 1024)).toFixed(2)} MB</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-300 mb-1">
+                Assign Category
+              </label>
+              <select
+                value={batchCategory}
+                onChange={(e) => setBatchCategory(e.target.value)}
+                className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white"
+              >
+                <option value="">General Welfare</option>
+                {categories.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-300 mb-1">
+                Default Location
+              </label>
+              <input
+                type="text"
+                value={batchLocation}
+                onChange={(e) => setBatchLocation(e.target.value)}
+                placeholder="Chandrapur, Maharashtra"
+                className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white"
+              />
+            </div>
+          </div>
+
+          {batchProgress.active && (
+            <div className="space-y-2 p-3 bg-slate-900 rounded-xl border border-slate-800">
+              <div className="flex justify-between text-xs font-bold text-white">
+                <span>Uploading Batch...</span>
+                <span>{batchProgress.current} / {batchProgress.total}</span>
+              </div>
+              <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-purple-500 transition-all duration-300"
+                  style={{ width: `${(batchProgress.current / batchProgress.total) * 100}%` }}
+                />
+              </div>
+            </div>
+          )}
+
+          <div className="pt-4 border-t border-slate-800 flex items-center justify-end gap-3">
+            <button
+              type="button"
+              disabled={batchProgress.active}
+              onClick={() => setIsBatchOpen(false)}
+              className="px-4 py-2 rounded-xl text-slate-400 hover:text-white"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              disabled={batchProgress.active || batchFiles.length === 0}
+              onClick={handleBatchUploadStart}
+              className="px-6 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold flex items-center gap-2 shadow-lg shadow-purple-600/30 disabled:opacity-50"
+            >
+              {batchProgress.active && <Loader2 className="w-4 h-4 animate-spin" />}
+              <span>Upload All {batchFiles.length > 0 ? `(${batchFiles.length})` : ''}</span>
+            </button>
+          </div>
+        </div>
       </AdminModal>
 
       {/* Full Screen Image Preview Modal */}

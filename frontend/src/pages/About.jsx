@@ -113,11 +113,11 @@ export default function About({ onOpenVolunteerModal, onOpenDonationModal }) {
             </h2>
 
             <p className="text-sm sm:text-base text-slate-600 leading-relaxed">
-              Yuva Social Foundation is a community-driven non-profit organization dedicated to helping poor and needy people by providing food, shelter, clothing, financial assistance, medicines, and essential support.
+              {overview?.profile?.description || "Yuva Social Foundation is a community-driven non-profit organization dedicated to helping poor and needy people by providing food, shelter, clothing, financial assistance, medicines, and essential support."}
             </p>
 
             <p className="text-sm sm:text-base text-slate-600 leading-relaxed">
-              Our foundation was established in 2017 in Chandrapur, Maharashtra, India, and officially registered in 2021. Over the years, we have been serving society selflessly, bringing hope and relief to those in distress. We believe that service to humanity is the greatest service of all.
+              {overview?.profile?.about_text || "Our foundation was established in 2017 in Chandrapur, Maharashtra, India, and officially registered in 2021. Over the years, we have been serving society selflessly, bringing hope and relief to those in distress. We believe that service to humanity is the greatest service of all."}
             </p>
 
             <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-3">
@@ -201,8 +201,8 @@ export default function About({ onOpenVolunteerModal, onOpenDonationModal }) {
                 <Eye className="w-6 h-6" />
               </div>
               <h3 className="text-2xl font-bold text-white mb-3">Our Vision</h3>
-              <p className="text-sm sm:text-base text-slate-300 leading-relaxed">
-                To enhance human wellbeing through accessible healthcare initiatives, educational support, and timely humanitarian aid, fostering a compassionate society where every individual thrives and no one is left behind.
+              <p className="text-sm sm:text-base text-slate-300 leading-relaxed whitespace-pre-line">
+                {overview?.profile?.vision || "To enhance human wellbeing through accessible healthcare initiatives, educational support, and timely humanitarian aid, fostering a compassionate society where every individual thrives and no one is left behind."}
               </p>
             </div>
 
@@ -212,8 +212,8 @@ export default function About({ onOpenVolunteerModal, onOpenDonationModal }) {
                 <Target className="w-6 h-6" />
               </div>
               <h3 className="text-2xl font-bold text-white mb-3">Our Mission</h3>
-              <p className="text-sm sm:text-base text-slate-300 leading-relaxed">
-                To create a society where no one suffers from hunger, homelessness, or lack of emergency medical care, and where every underprivileged individual gets the help they need to lead a dignified, healthy, and empowered life.
+              <p className="text-sm sm:text-base text-slate-300 leading-relaxed whitespace-pre-line">
+                {overview?.profile?.mission || "To create a society where no one suffers from hunger, homelessness, or lack of emergency medical care, and where every underprivileged individual gets the help they need to lead a dignified, healthy, and empowered life."}
               </p>
             </div>
           </div>
